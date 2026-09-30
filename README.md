@@ -71,3 +71,11 @@ js/historias/lazer.js           churrasco, piscina, noite
 js/historias/extras.js          modelo + historinhas novas
 js/principal.js                 loop, sorteio, HUD, teclado, salvar
 ```
+
+## Créditos e direitos
+
+Os personagens **Rato Borrachudo** (o Ratão) e **Manda Brasa** pertencem a **Douglas Mesquita**. Todos os direitos sobre eles, incluindo nomes, imagem e marca, são reservados ao autor.
+
+Este projeto é uma **homenagem de fã** aos personagens, desenvolvida por [Douglas Gessner](https://github.com/dgessner). Não tenho nenhum vínculo com Douglas Mesquita. Este não é um projeto oficial e não foi autorizado, patrocinado nem endossado pelo autor dos personagens.
+
+O projeto está aberto para adaptações e colaborações, desde que sejam mantidos os créditos ao desenvolvedor deste projeto e aos proprietários dos personagens e da marca.
