@@ -1,10 +1,16 @@
 <!doctype html>
+<!--
+  Rato Borrachudo (Ratão) e Manda Brasa são personagens de Douglas Mesquita. Todos os direitos reservados ao autor.
+  Homenagem de fã desenvolvida por Douglas Gessner (github.com/dgessner), sem vínculo com o autor dos personagens.
+  Projeto não oficial, não autorizado, patrocinado nem endossado pelo autor.
+-->
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ratão e Manda Brasa</title>
-  <meta name="description" content="O Ratão e o pai dele, o Manda Brasa, consertando tudo o que quebra numa casa com piscina.">
+  <meta name="description" content="Homenagem de fã, não oficial: o Ratão e o pai dele, o Manda Brasa, consertando tudo o que quebra numa casa com piscina. Personagens de Douglas Mesquita.">
+  <meta name="author" content="Douglas Gessner">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐀</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +24,7 @@
     <div id="topo">
       <h1>Ratão &amp; Manda Brasa</h1>
       <div id="dias"></div>
+      <div id="aviso">Rato Borrachudo e Manda Brasa © Douglas Mesquita · homenagem de fã, não oficial</div>
     </div>
     <div id="historia"></div>
     <div id="rodape">
@@ -25,10 +32,19 @@
       <div id="botoes">
         <button id="btn-proxima" title="Próxima história (N)">Próxima história ›</button>
         <button id="btn-tela" title="Tela cheia (F)">⛶</button>
+        <button id="btn-creditos" title="Créditos e direitos">Créditos</button>
       </div>
       <div id="dicas">N próxima · F tela cheia · P pausa · T +1 hora · H esconder</div>
     </div>
   </div>
+
+  <dialog id="creditos">
+    <h2>Créditos e direitos</h2>
+    <p>Os personagens <strong>Rato Borrachudo</strong> (o Ratão) e <strong>Manda Brasa</strong> pertencem a <strong>Douglas Mesquita</strong>. Todos os direitos sobre eles, incluindo nomes, imagem e marca, são reservados ao autor.</p>
+    <p>Este projeto é uma <strong>homenagem de fã</strong> aos personagens, desenvolvida por <a href="https://github.com/dgessner" target="_blank" rel="noopener">Douglas Gessner</a>. Não tenho nenhum vínculo com Douglas Mesquita. Este não é um projeto oficial e não foi autorizado, patrocinado nem endossado pelo autor dos personagens.</p>
+    <p>O projeto está aberto para adaptações e colaborações, desde que sejam mantidos os créditos ao desenvolvedor deste projeto e aos proprietários dos personagens e da marca. Código-fonte: <a href="https://github.com/dgessner/ratao_manda_brasa" target="_blank" rel="noopener">github.com/dgessner/ratao_manda_brasa</a>.</p>
+    <form method="dialog"><button autofocus>Fechar</button></form>
+  </dialog>
 
   <script src="js/util.js"></script>
   <script src="js/motor.js"></script>

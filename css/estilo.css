@@ -40,6 +40,7 @@ body.ocioso #topo, body.ocioso #rodape { opacity: 0; }
   letter-spacing: 0.5px;
 }
 #dias { font-size: 16px; opacity: 0.85; }
+#aviso { display: inline-block; font-size: 13px; margin-top: 4px; padding: 1px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); color: rgba(255, 255, 255, 0.9); }
 
 #historia {
   position: absolute;
@@ -81,7 +82,35 @@ body.ocioso #topo, body.ocioso #rodape { opacity: 0; }
 #botoes button:hover { background: rgba(0, 0, 0, 0.55); }
 #dicas { margin-left: auto; font-size: 15px; opacity: 0.75; }
 
+#creditos {
+  margin: auto;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 20px 24px;
+  border: none;
+  border-radius: 12px;
+  background: #fffdf6;
+  color: #2d2d2d;
+  font-size: 17px;
+  line-height: 1.4;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+#creditos::backdrop { background: rgba(10, 15, 40, 0.55); }
+#creditos h2 { font-weight: normal; font-size: 26px; margin-bottom: 10px; }
+#creditos p { margin-bottom: 10px; }
+#creditos a { color: #1f6fb5; }
+#creditos button {
+  font: inherit;
+  margin-top: 6px;
+  padding: 4px 16px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+}
+body:has(#creditos[open]) { cursor: auto; }
+
 @media (max-width: 640px) {
   #dicas { display: none; }
   #topo h1 { font-size: 20px; }
+  #aviso { font-size: 12px; }
 }

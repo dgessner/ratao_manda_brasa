@@ -183,8 +183,12 @@ function alternarTelaCheia() {
 window.addEventListener('mousemove', () => { ultimoMovimento = performance.now(); });
 window.addEventListener('touchstart', () => { ultimoMovimento = performance.now(); }, { passive: true });
 tela.addEventListener('dblclick', alternarTelaCheia);
+const elCreditos = document.getElementById('creditos');
+document.getElementById('btn-creditos').addEventListener('click', () => elCreditos.showModal());
+
 window.addEventListener('keydown', (e) => {
   ultimoMovimento = performance.now();
+  if (elCreditos.open) return;
   switch (e.key.toLowerCase()) {
     case 'n': proximaHistoria(); break;
     case 'f': alternarTelaCheia(); break;
