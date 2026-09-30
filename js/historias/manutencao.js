@@ -225,7 +225,7 @@ async function descerDaCaixa(a) {
 }
 
 registrarHistoria({
-  id: 'caixa', nome: "A Caixa d'Água", quando: DIA, peso: 1.5,
+  id: 'caixa', nome: "A Caixa d'Água", peso: 2,
   async rodar() {
     const torneira = LOCAL.cano + 16;
     await h.juntos(B.andar(torneira), R.andar(395));
