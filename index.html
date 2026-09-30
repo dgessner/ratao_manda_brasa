@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ratão e Manda Brasa</title>
+  <meta name="description" content="O Ratão e o pai dele, o Manda Brasa, consertando tudo o que quebra numa casa com piscina.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐀</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <canvas id="tela"></canvas>
+
+  <div id="hud">
+    <div id="topo">
+      <h1>Ratão &amp; Manda Brasa</h1>
+      <div id="dias"></div>
+    </div>
+    <div id="historia"></div>
+    <div id="rodape">
+      <div id="relogio"></div>
+      <div id="botoes">
+        <button id="btn-proxima" title="Próxima história (N)">Próxima história ›</button>
+        <button id="btn-tela" title="Tela cheia (F)">⛶</button>
+      </div>
+      <div id="dicas">N próxima · F tela cheia · P pausa · T +1 hora · H esconder</div>
+    </div>
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/motor.js"></script>
+  <script src="js/cenario.js"></script>
+  <script src="js/personagem.js"></script>
+  <script src="js/entidades.js"></script>
+  <script src="js/casa.js"></script>
+
+  <!-- Historinhas: para adicionar mais, crie um arquivo em js/historias/ e inclua aqui -->
+  <script src="js/historias/base.js"></script>
+  <script src="js/historias/manutencao.js"></script>
+  <script src="js/historias/carro.js"></script>
+  <script src="js/historias/lazer.js"></script>
+  <script src="js/historias/extras.js"></script>
+
+  <script src="js/principal.js"></script>
+</body>
+</html>
