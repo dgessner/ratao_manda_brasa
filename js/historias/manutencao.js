@@ -1,5 +1,5 @@
 'use strict';
-// Manutenção da casa: curto-circuito, luz, cano, muro, antena e o famoso lava-jato.
+// Manutenção da casa: curto-circuito, luz, cano, muro, caixa d'água e o famoso lava-jato.
 
 async function religarLuz() {
   const noite = Cenario.luz < 0.5;
@@ -8,14 +8,14 @@ async function religarLuz() {
   if (noite) { Ratao.acessorio = 'lanterna'; R.pose('lanterna'); }
   await B.falar(pick(['Deixa que eu resolvo. É só o disjuntor.', 'Na minha época a gente consertava tudo com um grampo.']));
   Casa.quadroAberto = true;
-  Brasa.alcance = 0.7;
+  Brasa.alcance = 0.4;
   B.pose('consertar');
   await h.esperar(1.6);
   if (chance(0.5)) {
     Brasa.choque = 1.4;
     B.pose('choque');
     Particulas.texto(Brasa.cabeca.x, Brasa.cabeca.y - 36, 'BZZZZT!', '#9be7ff', 22);
-    Particulas.faiscas(LOCAL.quadro, CHAO - 68, 18);
+    Particulas.faiscas(LOCAL.quadro, CHAO - 48, 18);
     await h.esperar(1.4);
     Brasa.choque = 0;
     Brasa.chamuscado = 0.7;
@@ -28,7 +28,7 @@ async function religarLuz() {
   }
   Casa.energia = true;
   Casa.quadroAberto = false;
-  Particulas.texto(LOCAL.quadro, CHAO - 96, 'tlec!', '#fff', 16);
+  Particulas.texto(LOCAL.quadro, CHAO - 76, 'tlec!', '#fff', 16);
   Ratao.acessorio = null;
   R.pose('comemorar');
   await R.falar(pick(['Voltou a luz!', 'Salve o disjuntor!']));
@@ -197,54 +197,135 @@ registrarHistoria({
   },
 });
 
+// sobe (ou desce) a escada encostada na garagem até a beira do telhado, perto da caixa d'água
+const ESCADA_CAIXA = 164;
+async function subirNaCaixa(a) {
+  const p = a.p;
+  await a.andar(ESCADA_CAIXA + 8);
+  a.virar(-1);
+  p.soltoDoChao = true;
+  a.pose('escalar');
+  await h.tween(p, { y: CHAO - 184, x: ESCADA_CAIXA - 10 }, 2.6, Ease.linear);
+  a.virar(1);
+  a.pose('andar');
+  const o = { _k: 0, get k() { return this._k; }, set k(v) { this._k = v; p.x = lerp(ESCADA_CAIXA - 10, CAIXA.luva - 21, v); p.y = telhadoY(p.x); } };
+  await h.tween(o, { k: 1 }, 0.8, Ease.linear);
+  a.pose('parado');
+}
+async function descerDaCaixa(a) {
+  const p = a.p;
+  a.virar(-1);
+  a.pose('andar');
+  const o = { _k: 0, get k() { return this._k; }, set k(v) { this._k = v; p.x = lerp(CAIXA.luva - 21, ESCADA_CAIXA - 10, v); p.y = telhadoY(p.x); } };
+  await h.tween(o, { k: 1 }, 0.8, Ease.linear);
+  a.pose('escalar');
+  await h.tween(p, { y: CHAO, x: ESCADA_CAIXA + 8 }, 2.2, Ease.linear);
+  p.soltoDoChao = false;
+  a.pose('parado');
+}
+
 registrarHistoria({
-  id: 'antena', nome: 'A Antena', peso: 1.5,
+  id: 'caixa', nome: "A Caixa d'Água", quando: DIA, peso: 1.5,
   async rodar() {
-    await h.juntos(B.andar(LOCAL.porta + 30), R.andar(505));
+    const torneira = LOCAL.cano + 16;
+    await h.juntos(B.andar(torneira), R.andar(395));
+    B.virar(-1);
+    Brasa.alcance = 0.2;
+    B.pose('consertar');
+    Particulas.texto(LOCAL.cano + 4, CHAO - 44, 'nhec', '#fff', 13, 0.8);
+    await h.esperar(1);
+    Particulas.add({ x: LOCAL.cano + 7, y: CHAO - 27, vy: 10, g: 300, vida: 0.8, cor: '#bfe6ff', tam: 1.4 });
+    await h.esperar(0.9);
+    B.pose('parado');
     B.olharPara(Ratao);
-    await B.falar('Ratão! A TV tá toda chuviscada!');
-    await R.falar('É a antena. Deixa comigo!');
-    const esc = h.add(new Escada(486, 184));
-    await R.andar(494);
-    R.virar(-1);
-    Ratao.soltoDoChao = true;
-    R.pose('escalar');
-    await h.tween(Ratao, { y: CHAO - 182, x: 476 }, 3, Ease.linear);
-    // sobe pelo telhado até a antena
-    R.pose('andar');
-    const o = { _k: 0, get k() { return this._k; }, set k(v) { this._k = v; Ratao.x = lerp(476, ANTENA_X + 20, v); Ratao.y = telhadoY(Ratao.x); } };
-    await h.tween(o, { k: 1 }, 1.5, Ease.linear);
-    R.virar(-1);
-    Ratao.alcance = 0.8;
-    R.pose('consertar');
+    await B.falar(pick(['Ratão! Acabou a água da casa!', 'Ué... cadê a água? Ratão!']));
+    await R.falar("Deve ser a caixa d'água, pai. Deixa comigo!");
+    await B.falar('Cuidado aí em cima, hein.');
+    // pega a escada e sobe
+    const esc = h.add(new Escada(ESCADA_CAIXA, 186));
+    await h.juntos(subirNaCaixa(R), B.andar(ESCADA_CAIXA + 36));
+    B.virar(-1);
     B.pose('olharCima');
-    const respostas = ['Piorou!', 'Agora só pega o canal da missa!', 'Tá passando novela mexicana!', 'Quase! Um pouquinho mais!'];
-    for (const resp of embaralhar(respostas).slice(0, 3)) {
-      h.tween(Casa, { antena: rand(-0.45, 0.45) }, 0.6);
-      await R.falar('E agora?', 1.2);
-      await B.falar(resp, 1.8);
-    }
-    await h.tween(Casa, { antena: 0 }, 0.6);
-    await R.falar('E AGORA?', 1.2);
-    B.pose('comemorar');
-    await B.falar('PEGOU!! Não mexe mais!');
-    R.pose('comemorar');
-    await R.falar('Eu sou demais!', 1.4);
-    // escorrega...
+    await R.falar('Tá quase vazia! Deve ser a boia...');
+    // mexe... e começa a vazar
+    Ratao.alcance = 0.35;
+    R.pose('consertar');
+    await h.esperar(1.6);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 20, 'ploc!', '#fff', 15);
+    Casa.caixaVaz = 0.5;
+    R.pose('parado');
     R.exclamar('!');
+    await h.esperar(0.8);
+    await B.falar('Que barulho foi esse?');
+    await R.falar(pick(['Nada não, pai!', 'Tá tudo sob controle!']));
+    // aperta com a chave: vaza mais
+    Ratao.acessorio = 'chave';
+    R.pose('consertar');
+    await h.esperar(1.4);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 22, 'PSSSH!', '#e8f6ff', 18);
+    await h.tween(Casa, { caixaVaz: 1 }, 0.4);
+    // e a água cai bem em cima do pai
+    await h.esperar(0.6);
+    Brasa.molhado = 1;
+    B.pose('assustado');
+    await B.falar('Tá chovendo aqui embaixo, Ratão!', 1.8);
+    B.pose('maosNaCintura');
+    await R.falar('É só um vazamentinho, pai!');
+    // troca a peça: piora
+    await R.falar('Vou trocar essa luva aqui. Tenho uma igualzinha!');
+    R.pose('consertar');
+    await h.esperar(1.4);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 22, 'crec!', '#fff', 15);
+    Casa.caixaPeca = true;
+    await h.esperar(0.5);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 26, 'FSSSHHH!', '#e8f6ff', 22);
+    await h.tween(Casa, { caixaVaz: 1.8 }, 0.4);
+    Ratao.molhado = 1;
     R.pose('assustado');
-    const d = { _k: 0, get k() { return this._k; }, set k(v) { this._k = v; Ratao.x = lerp(ANTENA_X + 20, ROOF.x1, v); Ratao.y = telhadoY(Ratao.x); } };
-    await h.tween(d, { k: 1 }, 0.45, Ease.in);
-    B.exclamar('!!');
-    await R.cairNaPiscina(610, 'assustado', 30);
-    Casa.antena = 0.35;
-    await B.correr(PISCINA.x0 - 12);
-    B.virar(1);
-    await B.falar('RATÃO! Tá vivo?');
-    await R.falar('...pegou o canal, pai?');
-    await B.falar('Pegou... agora caiu de novo.');
+    await R.falar('PIOROU!!', 1.3);
+    await B.falar('Igualzinha, é?');
+    // silver tape
+    Ratao.acessorio = 'fita';
+    R.pose('consertar');
+    await h.esperar(1.8);
+    Casa.caixaFita = true;
+    await h.tween(Casa, { caixaVaz: 0.12 }, 0.6);
+    Ratao.acessorio = null;
+    R.pose('irritado');
+    Particulas.palavrao(Ratao.cabeca.x, Ratao.cabeca.y - 30);
+    await R.falar(pick(['Ah, quer saber? Fica assim mesmo!', 'Chega! Silver tape e pronto!']));
+    await descerDaCaixa(R);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 14, 'plic...', '#bfe6ff', 13);
+    await h.esperar(1.2);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 14, 'ploc...', '#bfe6ff', 13);
+    B.pose('maoNaTesta');
+    await B.falar('Ratão... tá pingando.');
+    R.virar(1);
+    R.pose('maosNaCintura');
+    await R.falar('Pinga só um pouquinho. Nem dá pra ver!');
+    // o pai resolve
+    await h.juntos(B.falar('Sai da frente. Deixa que eu vejo.'), R.andar(ESCADA_CAIXA + 70));
+    R.virar(-1);
+    await subirNaCaixa(B);
+    B.pose('olharCima');
+    await B.falar('Luva laranja? Onde você achou isso?');
+    Brasa.acessorio = 'chave';
+    Brasa.alcance = 0.3;
+    B.pose('consertar');
+    await h.esperar(2.4);
+    Particulas.texto(CAIXA.luva, CAIXA.canoY - 22, 'tlec!', '#fff', 15);
+    Casa.caixaFita = false;
+    Casa.caixaPeca = false;
+    Casa.caixaVaz = 0;
+    Brasa.acessorio = null;
+    B.pose('orgulhoso');
+    await B.falar('Pronto. Era só a boia travada.');
+    await descerDaCaixa(B);
     esc.morto = true;
-    await R.sairDaPiscina();
+    B.olharPara(Ratao);
+    await R.falar('Mas eu tinha deixado quase pronto!');
+    B.pose('maosNaCintura');
+    await B.falar(pick(['Quase pronto tava a enchente.', 'Da próxima vez, sobe só pra olhar. SÓ OLHAR!']));
   },
 });
 

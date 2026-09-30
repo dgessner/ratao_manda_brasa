@@ -22,7 +22,7 @@ Tudo é desenhado por código em Canvas 2D, sem imagens e sem build. Para rodar 
 | Cadê a Luz? (quadro de luz, às vezes choque no pai) | Chama o Guincho | Bombaaa!: pulo na piscina molhando o pai |
 | Estourou o Cano (espirra na cara, registro, silver tape) | | Noite no Quintal |
 | Cai o Muro / Levantando o Muro | | Selfie na Piscina |
-| A Antena (acerta o canal... e cai do telhado na piscina) | | |
+| A Caixa d'Água (falta água, o Ratão sobe, piora o vazamento, silver tape pingando... e o pai conserta) | | |
 | **O Lava-Jato**: sem pressão → pressão demais → funciona → cai na piscina → falta luz → olha o bico e toma um banho | | |
 | Pescando o Lava-Jato | | |
 
@@ -54,7 +54,7 @@ registrarHistoria({
 **Atores:** `R` (Ratão) e `B` (Manda Brasa) têm `andar(x)`, `correr(x)`, `fugir(x)`, `falar(txt)`, `pensar(txt)`, `gritar(txt)`/`calar()`, `exclamar()`, `pular()`, `furia(n)`, `dormir(seg)`, `arco(x, y)`, `cairNaPiscina(x)`, `sairDaPiscina()`, `pose(nome)`, `virar(dir)`, `olharPara(x ou personagem)`.
 **Geral (`h`):** `esperar(seg)`, `juntos(...)`, `tween(obj, props, seg)`, `quando(() => cond)`, `add(entidade)`, `encarar()`.
 **Personagens (`Ratao`, `Brasa`):** `acessorio` (chave, martelo, lanterna, fita, pistola, extintor, balde, jornal, pegador, garrafa, celular, refri, tijolos, colher), `chamuscado`, `choque`, `molhado`, `tonto`, `vermelho`, `oculto`.
-**Casa:** `Casa.energia`, `muro`, `cano`, `sujeira`, `brasa`, `antena`, além de `Lavajato` e `Carro` (com `fogo`, `capo`, `estado`, `motorista`).
+**Casa:** `Casa.energia`, `muro`, `cano`, `sujeira`, `brasa`, `caixaVaz`, além de `Lavajato` e `Carro` (com `fogo`, `capo`, `estado`, `motorista`).
 
 ## Estrutura
 ```
@@ -65,7 +65,7 @@ js/personagem.js                classe Personagem + visuais do Ratão e do Manda
 js/casa.js                      casa, piscina, muro, quadro, cano, churrasqueira, lava-jato, carro
 js/entidades.js                 partículas, escada, raio, guincho
 js/historias/base.js            registrarHistoria(), atores R e B, comportamento à toa
-js/historias/manutencao.js      luz, cano, muro, antena, lava-jato
+js/historias/manutencao.js      luz, cano, muro, caixa d'água, lava-jato
 js/historias/carro.js           carro e guincho
 js/historias/lazer.js           churrasco, piscina, noite
 js/historias/extras.js          modelo + historinhas novas

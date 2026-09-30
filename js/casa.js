@@ -9,7 +9,10 @@ const ROOF = { x0: 138, x1: 472, apice: 305, base: CHAO - 180, topo: CHAO - 228 
 const telhadoY = (x) => (x < ROOF.apice
   ? lerp(ROOF.base, ROOF.topo, (x - ROOF.x0) / (ROOF.apice - ROOF.x0))
   : lerp(ROOF.topo, ROOF.base, (x - ROOF.apice) / (ROOF.x1 - ROOF.apice)));
-const ANTENA_X = 418;
+// caixa d'água: saída pela esquerda, cano horizontal com uma luva e cotovelo descendo pro telhado
+const CAIXA = { x: 214, w: 32, cano: 190, luva: 203 };
+CAIXA.y = telhadoY(230) - 22;        // topo da caixa
+CAIXA.canoY = CAIXA.y + 12;          // altura do cano de saída
 const naPiscina = (x) => x > PISCINA.x0 && x < PISCINA.x1;
 
 const Casa = {
@@ -22,7 +25,9 @@ const Casa = {
   tremorMuro: 0,
   cano: 'ok',        // ok | estourado | fita
   registroAberto: true,
-  antena: 0,         // inclinação da antena
+  caixaVaz: 0,       // vazamento no cano da caixa d'água (0 = seco, ~0.1 pinga, 1+ esguicha)
+  caixaPeca: false,  // o Ratão trocou a luva por uma peça que não é dela
+  caixaFita: false,  // remendo de silver tape no cano da caixa
   sujeira: 0.8,      // sujeira do piso em volta da piscina
   brasa: 0,          // fogo da churrasqueira
   quadroAberto: false,
@@ -41,12 +46,21 @@ const Casa = {
     this.t += dt;
     if (this.faiscaQuadro > 0) {
       this.faiscaQuadro -= dt;
-      if (chance(dt * 30)) Particulas.faiscas(LOCAL.quadro + rand(-6, 6), CHAO - 68, 3);
+      if (chance(dt * 30)) Particulas.faiscas(LOCAL.quadro + rand(-6, 6), CHAO - 48, 3);
     }
     if (this.cano === 'estourado' && this.registroAberto) {
       for (let i = 0; i < 3; i++) {
         Particulas.add({ x: LOCAL.cano + 2, y: CHAO - 76 + rand(-2, 2), vx: rand(90, 170), vy: rand(-110, -40), g: 420, vida: 0.9, cor: pick(['#bfe6ff', '#e8f6ff', '#8fcaf0']), tam: rand(1.2, 2.2) });
       }
+    }
+    if (this.caixaVaz > 0.3) {
+      const n = Math.round(this.caixaVaz * 2);
+      for (let i = 0; i < n; i++) {
+        Particulas.add({ x: CAIXA.luva + rand(-2, 2), y: CAIXA.canoY + rand(-2, 2), vx: rand(-40, 40) * this.caixaVaz, vy: -rand(20, 90) * this.caixaVaz, g: 420, vida: 1.3, cor: pick(['#bfe6ff', '#e8f6ff', '#8fcaf0']), tam: rand(1.2, 2.2) });
+      }
+    } else if (this.caixaVaz > 0.01 && chance(dt * 12 * this.caixaVaz)) {
+      // pinga
+      Particulas.add({ x: CAIXA.luva + rand(-1, 1), y: CAIXA.canoY + 3, vy: 10, g: 380, vida: 1.2, cor: '#bfe6ff', tam: 1.6 });
     }
     if (this.brasa > 0.05 && chance(dt * 4 * this.brasa)) Particulas.fumaca(LOCAL.churrasqueira, CHAO - 118, 'rgba(120,120,120,0.35)', 3);
     Lavajato.atualizar(dt);
@@ -57,7 +71,7 @@ const Casa = {
   salvar() {
     const dados = {
       energia: this.energia, muro: this.muro, muroPintado: this.muroPintado, entulho: this.entulho,
-      cano: this.cano, antena: this.antena, sujeira: this.sujeira,
+      cano: this.cano, sujeira: this.sujeira,
       carro: Carro.visivel ? Carro.estado : null, carroCor: Carro.cor, lavajatoNaPiscina: Lavajato.naPiscina,
     };
     try { localStorage.setItem(CHAVE_SAVE, JSON.stringify(dados)); } catch (e) { /* sem armazenamento */ }
@@ -67,7 +81,7 @@ const Casa = {
     try {
       const d = JSON.parse(localStorage.getItem(CHAVE_SAVE) || 'null');
       if (!d) return;
-      Object.assign(this, { energia: d.energia, muro: d.muro, muroPintado: d.muroPintado, entulho: d.entulho, cano: d.cano, antena: d.antena, sujeira: d.sujeira });
+      Object.assign(this, { energia: d.energia, muro: d.muro, muroPintado: d.muroPintado, entulho: d.entulho, cano: d.cano, sujeira: d.sujeira });
       if (d.carro) { Carro.visivel = true; Carro.estado = d.carro; Carro.cor = d.carroCor || Carro.cor; Carro.x = LOCAL.carro; }
       if (d.lavajatoNaPiscina) Lavajato.cairNaPiscina(true);
     } catch (e) { /* save corrompido */ }
@@ -152,26 +166,27 @@ const Casa = {
       const xa = lerp(ROOF.x0, ROOF.apice, k / 5), xb = lerp(ROOF.x1, ROOF.apice, k / 5);
       linha(ctx, xa, y, xb, y);
     }
-    // caixa d'água
-    ctx.fillStyle = c('#2f7fc1'); retArred(ctx, 190, telhadoY(206) - 22, 32, 24, 4); ctx.fill();
-    ctx.fillStyle = c('#236199'); ctx.fillRect(188, telhadoY(206) - 24, 36, 4);
-    // antena
-    const ax = ANTENA_X, ay = telhadoY(ax);
-    ctx.save();
-    ctx.translate(ax, ay);
-    ctx.rotate(this.antena);
-    ctx.strokeStyle = c('#8d9096'); ctx.lineWidth = 1.6;
-    linha(ctx, 0, 0, 0, -40);
-    ctx.lineWidth = 1.2;
-    for (let i = 0; i < 4; i++) linha(ctx, -12 + i * 2, -38 + i * 7, 12 - i * 2, -38 + i * 7);
-    ctx.restore();
+    // caixa d'água e os canos dela
+    const { x: kx, w: kw, y: ky, canoY: cy, cano: kc, luva: kl } = CAIXA;
+    ctx.fillStyle = c('#d9d9d2');
+    ctx.fillRect(kc - 2.5, cy - 2.5, kx - kc + 3, 5);                 // cano de saída
+    ctx.fillRect(kc - 2.5, cy - 2.5, 5, telhadoY(kc) - cy + 3);      // cotovelo descendo pro telhado
+    ctx.fillStyle = this.caixaPeca ? c('#e8752e') : c('#b8b8b0');     // luva (a trocada é laranja e torta)
+    if (this.caixaPeca) { ctx.save(); ctx.translate(kl, cy); ctx.rotate(0.25); ctx.fillRect(-3.5, -4, 7, 8); ctx.restore(); }
+    else ctx.fillRect(kl - 3, cy - 4, 6, 8);
+    if (this.caixaFita) { ctx.fillStyle = c('#aeb3ba'); ctx.fillRect(kl - 6, cy - 5, 12, 10); ctx.fillStyle = c('#c9ced4'); ctx.fillRect(kl - 6, cy - 2, 12, 1.5); }
+    ctx.fillStyle = c('#c92a2a'); ctx.fillRect(kc - 4, cy - 6, 8, 2.5);                    // registro
+    ctx.fillStyle = c('#2f7fc1'); retArred(ctx, kx, ky, kw, 24, 4); ctx.fill();
+    ctx.fillStyle = c('#236199'); ctx.fillRect(kx - 2, ky - 2, kw + 4, 4);
     // garagem
     ctx.fillStyle = c('#b9bcc2'); ctx.fillRect(162, CHAO - 72, 88, 72);
     ctx.fillStyle = c('#9ea2a9');
     for (let y = CHAO - 70; y < CHAO; y += 6) ctx.fillRect(162, y, 88, 1.2);
     // porta
-    ctx.fillStyle = c('#7a4a26'); ctx.fillRect(300, CHAO - 64, 30, 64);
-    ctx.fillStyle = c('#e0b64a'); elipse(ctx, 325, CHAO - 32, 1.5, 1.5); ctx.fill();
+    ctx.fillStyle = c('#7a4a26'); ctx.fillRect(299, CHAO - 86, 32, 86);
+    ctx.strokeStyle = c('#6a3f1f'); ctx.lineWidth = 1;
+    ctx.strokeRect(303, CHAO - 80, 24, 32); ctx.strokeRect(303, CHAO - 42, 24, 36);
+    ctx.fillStyle = c('#e0b64a'); elipse(ctx, 326, CHAO - 40, 1.5, 1.5); ctx.fill();
     // arandela
     ctx.fillStyle = c('#444'); ctx.fillRect(339, CHAO - 76, 6, 8);
     ctx.fillStyle = this.energia && Cenario.luz < 0.6 ? '#fff3c4' : c('#e8e2cf');
@@ -191,15 +206,15 @@ const Casa = {
     });
     // quadro de luz
     const qx = LOCAL.quadro;
-    ctx.fillStyle = c('#9ea2a9'); ctx.fillRect(qx - 9, CHAO - 80, 18, 24);
+    ctx.fillStyle = c('#9ea2a9'); ctx.fillRect(qx - 9, CHAO - 60, 18, 24);
     if (this.quadroAberto) {
-      ctx.fillStyle = c('#2c2f33'); ctx.fillRect(qx - 7, CHAO - 78, 14, 20);
+      ctx.fillStyle = c('#2c2f33'); ctx.fillRect(qx - 7, CHAO - 58, 14, 20);
       ctx.fillStyle = c('#e9e9e9');
-      for (let i = 0; i < 4; i++) ctx.fillRect(qx - 5 + i * 3, CHAO - 72, 2, 6);
-      ctx.fillStyle = c('#b9bcc2'); ctx.fillRect(qx - 20, CHAO - 80, 11, 24);
+      for (let i = 0; i < 4; i++) ctx.fillRect(qx - 5 + i * 3, CHAO - 52, 2, 6);
+      ctx.fillStyle = c('#b9bcc2'); ctx.fillRect(qx - 20, CHAO - 60, 11, 24);
     } else {
-      ctx.strokeStyle = c('#7d828a'); ctx.lineWidth = 0.8; ctx.strokeRect(qx - 7, CHAO - 78, 14, 20);
-      ctx.fillStyle = c('#ffd43b'); ctx.fillRect(qx - 3, CHAO - 76, 6, 2.5);
+      ctx.strokeStyle = c('#7d828a'); ctx.lineWidth = 0.8; ctx.strokeRect(qx - 7, CHAO - 58, 14, 20);
+      ctx.fillStyle = c('#ffd43b'); ctx.fillRect(qx - 3, CHAO - 56, 6, 2.5);
     }
     // tomada externa
     ctx.fillStyle = c('#f4f4f4'); ctx.fillRect(LOCAL.tomada - 4, CHAO - 34, 8, 9);

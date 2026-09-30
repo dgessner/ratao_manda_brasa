@@ -107,6 +107,7 @@ function arrumarDepois(abortada) {
   Casa.quadroAberto = false;
   if (Casa.cano === 'estourado') Casa.cano = 'fita';
   Casa.registroAberto = true;
+  Casa.caixaVaz = 0; Casa.caixaPeca = false; Casa.caixaFita = false;
   if (abortada) { Casa.brasa = 0; Cenario.chuva = 0; Cenario.vento = 0; Cenario.escuro = 0; }
   Casa.salvar();
 }
