@@ -2,9 +2,13 @@
 
 Página web animada no espírito dos screen savers dos anos 90.
 
+### ▶ [Assistir agora: dgessner.github.io/ratao_manda_brasa](https://dgessner.github.io/ratao_manda_brasa/)
+
+Dicas: `F` tela cheia · `N` próxima história · para ver uma história específica, use por exemplo [`?historia=lavajato`](https://dgessner.github.io/ratao_manda_brasa/?historia=lavajato).
+
 O **Ratão** e o pai dele, o **Manda Brasa**, moram numa casa de 2 andares com piscina e passam o dia consertando tudo o que quebra. E quebrando de novo.
 
-Tudo é desenhado por código em Canvas 2D, sem imagens e sem build. Para rodar, abra o `index.html` no navegador. Funciona direto pelo `file://`.
+Tudo é desenhado por código em Canvas 2D, sem imagens e sem build. Para rodar localmente, abra o `index.html` no navegador. Funciona direto pelo `file://`.
 
 ## Como funciona
 - A casa tem **estado**: luz, muro, cano, carro, sujeira do piso e o lava-jato. Ele fica salvo no navegador, e um estrago puxa o conserto. Sem luz, aparece "Cadê a Luz?"; muro no chão, "Levantando o Muro"; carro torrado, "Chama o Guincho"; lava-jato na piscina, "Pescando o Lava-Jato".
