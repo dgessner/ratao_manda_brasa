@@ -443,3 +443,128 @@ registrarHistoria({
     await R.falar('Salvei! Só precisa secar uns três dias.');
   },
 });
+
+registrarHistoria({
+  id: 'maquina', nome: 'A Máquina de Lavar', peso: 2,
+  pode: () => !Maquina.naPiscina && Casa.energia,
+  async rodar() {
+    await h.juntos(B.andar(440), R.andar(LOCAL.maquina - 26));
+    R.virar(1); B.virar(1);
+    await B.falar('Ratão, bota essa roupa pra lavar que amanhã tem churrasco.');
+    Ratao.alcance = 0.35;
+    R.pose('consertar');
+    Particulas.texto(LOCAL.maquina, CHAO - 44, 'fluf', '#fff', 13);
+    await h.esperar(1);
+    await R.falar('Sabão... amaciante... e liga!');
+    // não liga
+    for (let i = 0; i < 3; i++) {
+      Particulas.texto(LOCAL.maquina - 4, CHAO - 42 - i * 6, 'tec', '#fff', 12, 0.8);
+      await h.esperar(0.5);
+    }
+    R.pose('cocar');
+    await R.falar('Ué... não liga.');
+    await B.falar('Essa máquina tem mais idade que você.');
+    await R.falar('Deixa comigo, pai!');
+    // o conserto
+    Ratao.acessorio = 'chave';
+    R.pose('consertarAgachado');
+    for (const txt of ['clank', 'cronc', 'plim']) {
+      await h.esperar(0.9);
+      Particulas.texto(LOCAL.maquina + rand(-6, 6), CHAO - 40, txt, '#fff', 14);
+    }
+    await B.falar('Tirou da tomada antes, né?');
+    await R.falar('Precisa não, pai!');
+    Particulas.faiscas(LOCAL.maquina - 10, CHAO - 12, 14);
+    Particulas.texto(Ratao.x, Ratao.cabeca.y - 30, 'BZT!', '#9be7ff', 18);
+    Ratao.choque = 0.6;
+    R.pose('choque');
+    await h.esperar(0.7);
+    Ratao.choque = 0;
+    Ratao.chamuscado = 0.35;
+    R.pose('consertarAgachado');
+    await R.falar('...tô bem! Era só um fiozinho solto.');
+    Ratao.acessorio = 'martelo';
+    R.pose('martelar');
+    Particulas.texto(LOCAL.maquina, CHAO - 46, 'toc toc', '#fff', 14);
+    await h.esperar(1.2);
+    Ratao.acessorio = null;
+    // funciona!
+    R.pose('consertar');
+    Particulas.texto(LOCAL.maquina - 4, CHAO - 42, 'tec', '#fff', 12, 0.8);
+    await h.esperar(0.4);
+    Maquina.ligada = true;
+    Particulas.texto(LOCAL.maquina, CHAO - 50, 'vrrrrum', '#fff', 15);
+    R.pose('orgulhoso');
+    await B.falar('Olha só... funcionou!');
+    await R.falar('Eu sou um gênio, pai.');
+    await h.esperar(1);
+    // ...e começa a tremer
+    Particulas.texto(LOCAL.maquina, CHAO - 56, 'TUM TUM TUM', '#fff', 16);
+    await h.tween(Maquina, { tremor: 1 }, 1.5);
+    R.pose('assustado'); B.pose('assustado');
+    R.exclamar('!'); B.exclamar('!');
+    await R.falar('Pai... ela tá tremendo inteira!', 1.6);
+    // sai andando sozinha em direção à piscina
+    const andando = (async () => {
+      for (let i = 0; i < 9; i++) {
+        await h.tween(Maquina, { x: Maquina.x + 9 }, 0.32, Ease.out);
+        if (i % 3 === 0) Particulas.texto(Maquina.x, CHAO - 50, pick(['TUM!', 'TOC!', 'BLAM!']), '#fff', 15, 0.8);
+      }
+    })();
+    andando.catch(() => {}); // se a história for interrompida antes do await
+    B.gritar('SEGURA ELA, RATÃO!');
+    await h.esperar(0.6);
+    B.calar();
+    await R.correr(Maquina.x - 20);
+    R.virar(1);
+    R.pose('jatoForte');
+    await h.juntos(andando, h.tween(Ratao, { x: LOCAL.maquina + 81 - 20 }, 2.3, Ease.linear));
+    await R.falar('Ela é muito forte!', 1.2);
+    // tchibum
+    R.pose('assustado');
+    await h.tween(Maquina, { x: Maquina.x + 14, rot: 0.5 }, 0.4, Ease.in);
+    Maquina.cairNaPiscina();
+    await h.tween(Maquina, { y: PISCINA.fundo - 5, rot: -0.25 }, 0.6, Ease.in);
+    Particulas.respingo(Maquina.x, PISCINA.agua, 30, 1.3);
+    Particulas.texto(Maquina.x, PISCINA.agua - 44, 'TCHIBUM!', '#fff', 24);
+    await h.esperar(0.4);
+    Particulas.faiscas(Maquina.x, PISCINA.agua, 22);
+    Particulas.texto(Maquina.x, PISCINA.agua - 68, 'BZZZT!', '#9be7ff', 20);
+    Casa.faiscaQuadro = 1;
+    Casa.energia = false;
+    Particulas.texto(LOCAL.quadro, CHAO - 110, 'TUUUM...', '#ddd', 18);
+    await h.esperar(1);
+    R.pose('parado');
+    await B.andar(Ratao.x - 30);
+    B.virar(1);
+    B.pose('maoNaTesta');
+    await B.falar('Pelo menos a roupa vai sair bem enxaguada.');
+    await R.falar('...e a luz caiu de novo, né?');
+    await B.falar('RATÃÃÃO!!', 1.2);
+  },
+});
+
+registrarHistoria({
+  id: 'resgateMaquina', nome: 'Pescando a Máquina', peso: 5,
+  pode: () => Maquina.naPiscina,
+  async rodar() {
+    await h.juntos(B.andar(LOCAL.maquina - 44), R.andar(PISCINA.x0 - 6));
+    B.virar(1); R.virar(1);
+    await B.falar('Ratão, a máquina de lavar ainda tá lá no fundo.');
+    await R.falar('Mas ela tá fazendo tanta espuma... parece um ofurô!');
+    await B.falar('VAI BUSCAR!', 1.2);
+    await R.cairNaPiscina(Maquina.x + 20, 'bomba', 30);
+    R.pose('nadar');
+    await h.tween(Ratao, { y: NADO + 14 }, 0.6);
+    await h.esperar(1.2);
+    // empurra a máquina de volta pro lugar
+    Maquina.tirarDaPiscina();
+    Particulas.respingo(PISCINA.x0 + 10, PISCINA.agua, 14);
+    await h.tween(Ratao, { y: NADO }, 0.5);
+    await R.sairDaPiscina();
+    R.pose('mostrar');
+    await R.falar('Prontinho! Lavada por dentro e por fora.');
+    B.pose('maoNaTesta');
+    await B.pensar('Amanhã eu levo na lavanderia.');
+  },
+});

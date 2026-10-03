@@ -30,6 +30,7 @@ function atualizar(dt) {
   Relogio.atualizar(dt);
   Cenario.atualizar(dt);
   Casa.atualizar(dt);
+  Cachorro.atualizar(dt);
   Motor.atualizar(dt);
   for (const p of PERSONAGENS) p.atualizar(dt);
   Particulas.atualizar(dt);
@@ -43,8 +44,16 @@ function desenhar() {
   Cenario.desenharFundo(ctx);
   Cenario.desenharChao(ctx);
   Casa.desenharFundo(ctx);
+  Cachorro.desenharNaJanela(ctx);
   Motor.desenharCamada(ctx, 2);
-  for (const p of PERSONAGENS) desenharPersonagem(ctx, p);
+  for (const p of PERSONAGENS) {
+    // quem está dentro da piscina não pode aparecer abaixo do fundo dela
+    const dentro = p.y > PISCINA.borda && naPiscina(p.x);
+    if (dentro) { ctx.save(); ctx.beginPath(); ctx.rect(PISCINA.x0, Vista.y0, PISCINA.x1 - PISCINA.x0, PISCINA.fundo - Vista.y0); ctx.clip(); }
+    desenharPersonagem(ctx, p);
+    if (dentro) ctx.restore();
+  }
+  Cachorro.desenhar(ctx);
   Casa.desenharAgua(ctx);
   Motor.desenharCamada(ctx, 3);
   Motor.desenharCamada(ctx, 4);
@@ -85,7 +94,7 @@ function escolherHistoria() {
     if (f) return f;
   }
   const per = Relogio.periodo();
-  const validas = HISTORIAS.filter((x) => x.quando.includes(per) && x.pode()).map((x) => ({ x, peso: valor(x.peso) })).filter((c) => c.peso > 0);
+  const validas = HISTORIAS.filter((x) => x.saude === Ratao.saude && x.quando.includes(per) && x.pode()).map((x) => ({ x, peso: valor(x.peso) })).filter((c) => c.peso > 0);
   let cands = validas.filter((c) => !ultimas.includes(c.x.id));
   if (!cands.length) cands = validas;
   if (!cands.length) return null;
@@ -95,9 +104,13 @@ function escolherHistoria() {
 // devolve tudo a um estado consistente depois de uma história (principalmente se foi abortada)
 function arrumarDepois(abortada) {
   for (const p of PERSONAGENS) p.resetar();
+  for (const s of SOCORRISTAS) { s.oculto = true; s.x = -300; }
+  if (Ratao.saude === 'hospital') Ratao.oculto = true;
+  if (Cachorro.controlado || Cachorro.dono) Cachorro.liberar();
   Lavajato.ligado = false;
   Lavajato.dono = null;
   if (!Lavajato.naPiscina) { Lavajato.rot = 0; Lavajato.y = CHAO; }
+  if (!Maquina.naPiscina) Maquina.tirarDaPiscina();
   Carro.motorista = null;
   Carro.fumaca = false;
   if (Carro.fogo > 0) { Carro.fogo = 0; Carro.estado = 'queimado'; }
@@ -167,8 +180,10 @@ function atualizarHUD() {
     Casa.energia ? 'luz ok' : 'sem luz',
     Casa.muro >= 1 ? 'muro em pé' : 'muro no chão',
     Casa.cano === 'fita' ? 'cano com fita' : 'cano ok',
+    Maquina.naPiscina && 'máquina na piscina',
     Carro.visivel ? (Carro.estado === 'queimado' ? 'carro torrado' : 'carro na garagem') : 'sem carro',
-  ].join(' · ');
+    { hospital: 'Ratão no hospital', cadeira: 'Ratão de cadeira de rodas' }[Ratao.saude],
+  ].filter(Boolean).join(' · ');
   if (txt + status !== ultimoTexto) {
     ultimoTexto = txt + status;
     elRelogio.textContent = txt;

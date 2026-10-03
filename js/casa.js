@@ -3,8 +3,9 @@
 // espreguiçadeira, lava-jato e o carro. O estado (luz, muro, cano, carro...) fica salvo no navegador.
 
 const CHAVE_SAVE = 'ratao_manda_brasa_v1';
-const PISCINA = { x0: LOCAL.piscinaX0, x1: LOCAL.piscinaX1, agua: CHAO + 6, fundo: CHAO + 48 };
-const NADO = CHAO + 52; // y dos pés de quem está boiando na piscina
+// a piscina fica logo abaixo do piso (que passa inteiro por cima dela), mais pra frente na tela
+const PISCINA = { x0: LOCAL.piscinaX0, x1: LOCAL.piscinaX1, borda: CHAO + 10, agua: CHAO + 19, fundo: CHAO + 74 };
+const NADO = PISCINA.fundo - 8; // y dos pés de quem está boiando (os pés ficam dentro da piscina)
 const ROOF = { x0: 138, x1: 472, apice: 305, base: CHAO - 180, topo: CHAO - 228 };
 const telhadoY = (x) => (x < ROOF.apice
   ? lerp(ROOF.base, ROOF.topo, (x - ROOF.x0) / (ROOF.apice - ROOF.x0))
@@ -13,6 +14,8 @@ const telhadoY = (x) => (x < ROOF.apice
 const CAIXA = { x: 214, w: 32, cano: 190, luva: 203 };
 CAIXA.y = telhadoY(230) - 22;        // topo da caixa
 CAIXA.canoY = CAIXA.y + 12;          // altura do cano de saída
+// janelas da casa: [x, y, largura, altura] (a da sala e as três de cima)
+const JANELAS = [[360, CHAO - 78, 70, 38], [175, CHAO - 165, 50, 37], [275, CHAO - 165, 60, 37], [375, CHAO - 165, 60, 37]];
 const naPiscina = (x) => x > PISCINA.x0 && x < PISCINA.x1;
 
 const Casa = {
@@ -64,6 +67,7 @@ const Casa = {
     }
     if (this.brasa > 0.05 && chance(dt * 4 * this.brasa)) Particulas.fumaca(LOCAL.churrasqueira, CHAO - 118, 'rgba(120,120,120,0.35)', 3);
     Lavajato.atualizar(dt);
+    Maquina.atualizar(dt);
     Carro.atualizar(dt);
   },
 
@@ -72,7 +76,8 @@ const Casa = {
     const dados = {
       energia: this.energia, muro: this.muro, muroPintado: this.muroPintado, entulho: this.entulho,
       cano: this.cano, sujeira: this.sujeira,
-      carro: Carro.visivel ? Carro.estado : null, carroCor: Carro.cor, lavajatoNaPiscina: Lavajato.naPiscina,
+      carro: Carro.visivel ? Carro.estado : null, carroCor: Carro.cor, lavajatoNaPiscina: Lavajato.naPiscina, maquinaNaPiscina: Maquina.naPiscina,
+      ratao: { saude: Ratao.saude, cadeiraFalta: Ratao.cadeiraFalta, hospitalFalta: Ratao.hospitalFalta },
     };
     try { localStorage.setItem(CHAVE_SAVE, JSON.stringify(dados)); } catch (e) { /* sem armazenamento */ }
   },
@@ -84,6 +89,8 @@ const Casa = {
       Object.assign(this, { energia: d.energia, muro: d.muro, muroPintado: d.muroPintado, entulho: d.entulho, cano: d.cano, sujeira: d.sujeira });
       if (d.carro) { Carro.visivel = true; Carro.estado = d.carro; Carro.cor = d.carroCor || Carro.cor; Carro.x = LOCAL.carro; }
       if (d.lavajatoNaPiscina) Lavajato.cairNaPiscina(true);
+      if (d.maquinaNaPiscina) Maquina.cairNaPiscina(true);
+      if (d.ratao) { Object.assign(Ratao, d.ratao); Ratao.oculto = Ratao.saude === 'hospital'; }
     } catch (e) { /* save corrompido */ }
   },
 
@@ -99,6 +106,7 @@ const Casa = {
     this.desenharEspreguicadeira(ctx);
     this.desenharSujeira(ctx);
     if (!Lavajato.naPiscina) Lavajato.desenhar(ctx);
+    if (!Maquina.naPiscina) Maquina.desenhar(ctx);
     Carro.desenhar(ctx);
   },
 
@@ -192,8 +200,7 @@ const Casa = {
     ctx.fillStyle = this.energia && Cenario.luz < 0.6 ? '#fff3c4' : c('#e8e2cf');
     elipse(ctx, 342, CHAO - 66, 3, 3.5); ctx.fill();
     // janelas
-    const janelas = [[360, CHAO - 78, 70, 38], [175, CHAO - 165, 50, 37], [275, CHAO - 165, 60, 37], [375, CHAO - 165, 60, 37]];
-    janelas.forEach(([x, y, w, hh], i) => {
+    JANELAS.forEach(([x, y, w, hh], i) => {
       ctx.fillStyle = c('#ffffff'); ctx.fillRect(x - 3, y - 3, w + 6, hh + 6);
       ctx.fillStyle = this.janelaAcesa(i) ? '#ffd98a' : c('#8fc3df');
       ctx.fillRect(x, y, w, hh);
@@ -243,22 +250,27 @@ const Casa = {
   },
 
   desenharPiscinaFundo(ctx) {
-    const { x0, x1, fundo } = PISCINA;
+    const { x0, x1, borda, fundo } = PISCINA;
     const c = (v) => this.cor_(v);
-    ctx.fillStyle = c('#bfe6f5'); ctx.fillRect(x0, CHAO - 4, x1 - x0, fundo - CHAO + 4);
+    // azulejos
+    ctx.fillStyle = c('#bfe6f5'); ctx.fillRect(x0, borda, x1 - x0, fundo - borda);
     ctx.strokeStyle = c('#9fd0e6'); ctx.lineWidth = 0.7;
-    for (let x = x0; x < x1; x += 10) linha(ctx, x, CHAO, x, fundo);
-    for (let y = CHAO; y < fundo; y += 10) linha(ctx, x0, y, x1, y);
-    ctx.fillStyle = c('#f4f4f0');
-    ctx.fillRect(x0 - 6, CHAO - 5, 8, 6); ctx.fillRect(x1 - 2, CHAO - 5, 8, 6);
-    // escadinha
+    for (let x = x0; x < x1; x += 10) linha(ctx, x, borda + 4, x, fundo);
+    for (let y = borda + 10; y < fundo; y += 10) linha(ctx, x0, y, x1, y);
+    // borda de pedra entre o piso e a água
+    ctx.fillStyle = c('#f4f4f0'); ctx.fillRect(x0 - 6, borda - 1, x1 - x0 + 12, 5);
+    ctx.fillStyle = c('#d6d3ca'); ctx.fillRect(x0 - 6, borda + 3, x1 - x0 + 12, 1.5);
+    // escadinha: os corrimãos sobem acima do piso
     ctx.strokeStyle = c('#c8ccd2'); ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.moveTo(x1 - 14, fundo - 8); ctx.lineTo(x1 - 14, CHAO - 10); ctx.quadraticCurveTo(x1 - 14, CHAO - 16, x1 - 6, CHAO - 14); ctx.lineTo(x1 - 4, CHAO - 4); ctx.stroke();
+    for (const dx of [-14, -24]) {
+      ctx.beginPath(); ctx.moveTo(x1 + dx, fundo - 8); ctx.lineTo(x1 + dx, CHAO - 8); ctx.quadraticCurveTo(x1 + dx, CHAO - 14, x1 + dx + 8, CHAO - 12); ctx.lineTo(x1 + dx + 10, CHAO); ctx.stroke();
+    }
   },
 
   desenharAgua(ctx) {
     const { x0, x1, agua, fundo } = PISCINA;
     if (Lavajato.naPiscina) Lavajato.desenhar(ctx);
+    if (Maquina.naPiscina) Maquina.desenhar(ctx);
     const noite = 1 - Cenario.luz;
     const g = ctx.createLinearGradient(0, agua, 0, fundo);
     g.addColorStop(0, rgb(Cenario.escurecer('#38b6e0', 0.6), 0.62));
@@ -388,6 +400,56 @@ const Lavajato = {
         ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.quadraticCurveTo((b.x + p.x) / 2, (b.y + p.y) / 2 - 3, p.x, p.y); ctx.stroke();
       }
     }
+  },
+};
+
+// ------------------------------------------------------------------ máquina de lavar (do lado da churrasqueira)
+const Maquina = {
+  x: LOCAL.maquina, y: CHAO, rot: 0, naPiscina: false,
+  ligada: false, giro: 0, tremor: 0, t: 0,
+  cairNaPiscina(instantaneo) {
+    this.naPiscina = true;
+    this.ligada = false; this.tremor = 0;
+    if (instantaneo) { this.x = PISCINA.x0 + 70; this.y = PISCINA.fundo - 5; this.rot = -0.25; }
+  },
+  tirarDaPiscina() { Object.assign(this, { naPiscina: false, x: LOCAL.maquina, y: CHAO, rot: 0, ligada: false, tremor: 0 }); },
+  atualizar(dt) {
+    this.t += dt;
+    if (this.ligada) this.giro += dt * (6 + this.tremor * 14);
+    // no fundo da piscina, continua soltando espuma
+    if (this.naPiscina && chance(dt * 3)) {
+      Particulas.add({ x: this.x + rand(-8, 8), y: PISCINA.agua + 2, vx: rand(-6, 6), vy: -rand(6, 14), vida: rand(1.2, 2), cor: 'rgba(255,255,255,0.85)', tam: rand(1.5, 3.2) });
+    }
+  },
+  desenhar(ctx) {
+    const c = (v) => rgb(Cenario.escurecer(v));
+    const tx = this.tremor ? Math.sin(this.t * 55) * 1.6 * this.tremor : 0;
+    const tr = this.tremor ? Math.sin(this.t * 41) * 0.05 * this.tremor : 0;
+    ctx.save();
+    // dentro da piscina, nada pode aparecer abaixo do fundo nem fora das bordas
+    if (this.naPiscina) { ctx.beginPath(); ctx.rect(PISCINA.x0, PISCINA.borda, PISCINA.x1 - PISCINA.x0, PISCINA.fundo - PISCINA.borda); ctx.clip(); }
+    ctx.translate(this.x + tx, this.y);
+    ctx.rotate(this.rot + tr);
+    // gabinete e painel
+    ctx.fillStyle = c('#f1f3f5'); retArred(ctx, -14, -32, 28, 32, 2.5); ctx.fill();
+    ctx.fillStyle = c('#dee2e6'); ctx.fillRect(-14, -32, 28, 7);
+    ctx.fillStyle = c('#868e96'); elipse(ctx, 8, -28.5, 2.2, 2.2); ctx.fill();
+    ctx.fillStyle = this.ligada ? '#69db7c' : c('#495057'); ctx.fillRect(-10, -30, 3, 2.5);
+    ctx.fillStyle = c('#adb5bd'); ctx.fillRect(-5, -29.5, 8, 1.5);
+    // porta redonda com a roupa girando
+    ctx.fillStyle = c('#adb5bd'); elipse(ctx, 0, -13, 9.5, 9.5); ctx.fill();
+    ctx.fillStyle = c('#5c7cfa'); elipse(ctx, 0, -13, 7.5, 7.5); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, -13, 7.5, 0, TAU); ctx.clip();
+    ctx.translate(0, -13); ctx.rotate(this.giro);
+    for (const [cor, a] of [['#e03131', 0], ['#fab005', 2.1], ['#2f9e44', 4.2]]) {
+      ctx.fillStyle = c(cor); elipse(ctx, Math.cos(a) * 3.5, Math.sin(a) * 3.5, 3, 2.2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; elipse(ctx, -2.5, -16, 2.5, 1.6); ctx.fill();
+    // pezinhos
+    ctx.fillStyle = c('#495057'); ctx.fillRect(-12, -1, 4, 2); ctx.fillRect(8, -1, 4, 2);
+    ctx.restore();
   },
 };
 

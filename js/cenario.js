@@ -10,7 +10,7 @@ const chaoY = () => CHAO;
 const LOCAL = {
   carro: 205, casaX0: 150, casaX1: 460, garagem: 206, quadro: 271, porta: 315, tomada: 345,
   cano: 455, registro: 440, churrasqueira: 487, piscinaX0: 545, piscinaX1: 770,
-  espreguicadeira: 815, lavajato: 865, muroX0: 760,
+  espreguicadeira: 815, lavajato: 865, muroX0: 760, maquina: 524,
 };
 
 const Vista = { x0: 0, y0: 0, x1: W, y1: H, w: W, h: H };

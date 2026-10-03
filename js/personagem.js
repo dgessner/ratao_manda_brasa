@@ -29,6 +29,16 @@ const VISUAL_BRASA = {
   },
 };
 
+// socorristas da ambulância (só aparecem na história da coluna)
+const VISUAL_SOCORRISTA = {
+  esc: 1.02, barriga: 3, bunda: 3, cabeca: 'pessoa', barrigaDeFora: false, botoes: false, sapato: 'tenis',
+  cores: {
+    pele: '#e0ac85', peleT: '#c99470', peleSombra: '#c48c66', cabelo: '#2b1d14', bone: '#c92a2a',
+    camisa: '#f08c00', camisaT: '#d9480f', manga: '#e8590c', faixa: '#f1f3f5',
+    calca: '#1f3a5f', calcaT: '#182e4b', sapato: '#2b2b2b', olho: '#1b1b1b',
+  },
+};
+
 let C = {};
 let RAIOX = false;
 
@@ -41,11 +51,15 @@ class Personagem {
       acessorio: null, alcance: 0.5,
       fala: null, tonto: 0, chamuscado: 0, choque: 0, vermelho: 0, molhado: 0,
       mao: { x, y: CHAO - 30 }, cabeca: { x, y: CHAO - 55 },
+      saude: 'ok', cadeiraFalta: 0, hospitalFalta: 0, rodaCadeira: 0, px: x,   // saude: ok | hospital | cadeira
     });
   }
+  get naCadeira() { return this.saude === 'cadeira'; }
   setPose(p) { if (this.pose !== p) { this.pose = p; this.tPose = 0; } }
   atualizar(dt) {
     this.tPose += dt;
+    this.rodaCadeira += (this.x - this.px) / 11;
+    this.px = this.x;
     if (!this.soltoDoChao) this.y = CHAO + this.offY;
     if (this.fala) this.fala.t += dt;
     if (this.tonto > 0) this.tonto -= dt;
@@ -75,7 +89,11 @@ class Personagem {
 
 const Ratao = new Personagem('Ratão', VISUAL_RATAO, 400);
 const Brasa = new Personagem('Manda Brasa', VISUAL_BRASA, 520);
-const PERSONAGENS = [Brasa, Ratao];
+const Socorrista1 = new Personagem('Socorrista', VISUAL_SOCORRISTA, -300);
+const Socorrista2 = new Personagem('Socorrista', VISUAL_SOCORRISTA, -300);
+const SOCORRISTAS = [Socorrista1, Socorrista2];
+for (const s of SOCORRISTAS) s.oculto = true;
+const PERSONAGENS = [Brasa, Ratao, Socorrista1, Socorrista2];
 
 // ------------------------------------------------------------------ poses
 function poseBase() {
@@ -195,11 +213,13 @@ const POSES = {
   irritado(p, t) { p.incl = 0.08; p.bF = [2.7, 3.1 + Math.sin(t * 14) * 0.35]; p.olhos = 'bravo'; p.boca = 'aberta'; },
   triste(p, t) { p.incl = 0.18; p.cab = 0.3; p.bF = [G(p, 0.05), G(p, 0.02)]; p.bT = [G(p, -0.02), G(p, 0)]; p.boca = 'triste'; p.sobr = -1; },
   assustado(p) { p.bF = [2.4, 2.9]; p.bT = [2.2, 2.7]; p.olhos = 'susto'; p.boca = 'aberta'; p.incl = -0.15; },
+  // sentado no chão (bunda na grama), inclinado pra trás, pernas esticadas
   caido(p, t) {
     sentar(p);
-    p.incl = -0.7;
-    p.pF = [2.3, 1.8]; p.pT = [2.1, 1.5];
-    p.bF = [G(p, -0.6), G(p, -0.5)]; p.bT = [G(p, -0.7), G(p, -0.6)];
+    p.hy = 21;
+    p.incl = -0.55;
+    p.pF = [1.62, 1.52]; p.pT = [1.5, 1.42];
+    p.bF = [G(p, -0.25), G(p, -0.2)]; p.bT = [G(p, -0.35), G(p, -0.3)];   // mãos apoiadas na grama
     p.olhos = 'x'; p.boca = 'o';
   },
   tonto(p, t) {
@@ -220,11 +240,28 @@ const POSES = {
   selfie(p, t) { POSES.parado(p, t); p.bF = [2.2, 2.2]; p.olhos = 'feliz'; p.boca = 'sorriso'; p.cab = -0.1; },
   nadar(p, t) {
     p.incl = 0.5;
-    const s = (t * 5) % TAU;
+    const s = ((-t * 5) % TAU + TAU) % TAU; // braçada no sentido horário
     p.bF = [s, s + 0.3]; p.bT = [(s + Math.PI) % TAU, (s + Math.PI) % TAU + 0.3];
     p.pF = [-0.2 + Math.sin(t * 8) * 0.3, -0.3]; p.pT = [-0.2 - Math.sin(t * 8) * 0.3, -0.3];
     p.cab = -0.4;
   },
+  // coluna travou: fica curvado, sem conseguir levantar
+  travado(p, t) {
+    POSES.abaixar(p, t);
+    p.incl = 0.75 + Math.sin(t * 30) * 0.015;
+    p.bF = [G(p, 0.9), G(p, 1.2)]; p.bT = [G(p, 0.7), G(p, 1.0)];
+    p.olhos = 'susto'; p.boca = 'aberta';
+  },
+  // deitado no chão, gemendo de dor nas costas
+  dorCostas(p, t) {
+    POSES.deitado(p, t);
+    const s = Math.sin(t * 9) * 0.25;
+    p.bF = [2.6 + s, 3.2 + s]; p.bT = [2.4 - s, 3.0 - s];
+    p.pF = [0.3, 0.6]; p.pT = [0.5, 0.9];
+    p.olhos = 'fechado'; p.boca = 'aberta';
+  },
+  // segurando nas manoplas da cadeira de rodas
+  empurrar(p, t) { pernasAndando(p, t, 10); p.incl = 0.25; p.bF = [G(p, 1.45), G(p, 1.55)]; p.bT = [G(p, 1.35), G(p, 1.45)]; },
   boiar(p, t) {
     const s = Math.sin(t * 4);
     p.bF = [1.3 + s * 0.4, 1.5 + s * 0.3]; p.bT = [1.1 - s * 0.4, 1.3 - s * 0.3];
@@ -303,7 +340,11 @@ function tronco(ctx, v) {
     elipse(ctx, 3.5 + b * 0.45, -2, b * 0.75 + 2, 2.6); ctx.fill();
     ctx.fillStyle = C.peleT;
     elipse(ctx, 5 + b * 0.6, -2, 0.7, 0.6); ctx.fill();
-  } else {
+  } else if (C.faixa) {
+    // faixa refletiva do uniforme
+    ctx.fillStyle = C.faixa;
+    ctx.fillRect(-7, -11, 14 + b * 0.9, 2.2);
+  } else if (v.botoes !== false) {
     // botões da camisa do Brasa
     ctx.fillStyle = '#f4f4f4';
     for (let y = -18; y < -2; y += 4.5) { elipse(ctx, 6 + b * 0.8 * Math.sin(((y + 22) / 22) * Math.PI), y, 0.7, 0.7); ctx.fill(); }
@@ -439,6 +480,24 @@ function cabecaVelho(ctx, p, z) {
   elipse(ctx, 4.5, 1.2, 2, 1.3); ctx.fill();
 }
 
+function cabecaPessoa(ctx, p, z) {
+  ctx.fillStyle = C.pele;
+  elipse(ctx, 0.5, 0, 7.5, 7.5); ctx.fill();
+  ctx.fillStyle = C.cabelo;
+  elipse(ctx, -3, -2, 5, 5.5); ctx.fill();
+  ctx.fillStyle = C.peleT;
+  elipse(ctx, -2, 0.5, 1.8, 2.4); ctx.fill();
+  if (RAIOX) return;
+  // boné
+  ctx.fillStyle = C.bone;
+  ctx.beginPath(); ctx.arc(0.5, -2, 7.8, Math.PI, TAU); ctx.fill();
+  ctx.fillRect(4, -3.2, 8, 2);
+  ctx.fillStyle = C.peleT;
+  elipse(ctx, 8.3, 0.4, 1.8, 1.6); ctx.fill();
+  olho(ctx, 4.8, -0.6, p.olhos);
+  boca(ctx, p, 6, 4.4);
+}
+
 function desenharCabeca(ctx, p, z) {
   ctx.save();
   ctx.translate(1, -21);
@@ -446,7 +505,9 @@ function desenharCabeca(ctx, p, z) {
   ctx.translate(0, -8);
   ctx.fillStyle = C.peleT;
   ctx.fillRect(-2.5, 3, 5, 6);
-  if (z.visual.cabeca === 'rato') cabecaRato(ctx, p, z); else cabecaVelho(ctx, p, z);
+  if (z.visual.cabeca === 'rato') cabecaRato(ctx, p, z);
+  else if (z.visual.cabeca === 'pessoa') cabecaPessoa(ctx, p, z);
+  else cabecaVelho(ctx, p, z);
   if (RAIOX) {
     ctx.strokeStyle = '#f5f5ff'; ctx.lineWidth = 1.2;
     elipse(ctx, 0.5, -0.5, 6, 6.5); ctx.stroke();
@@ -550,6 +611,7 @@ function desenharPersonagem(ctx, z) {
   if (p.olhos === 'aberto' && (z.tPose % 3.7) > 3.58) p.olhos = 'fechado';
   if (z.tonto > 0) p.olhos = 'x';
   if (z.vermelho > 0.5 && p.olhos === 'aberto') p.olhos = 'bravo';
+  if (z.naCadeira) poseNaCadeira(p, z);
   C = paleta(z);
 
   ctx.save();
@@ -563,6 +625,7 @@ function desenharPersonagem(ctx, z) {
   }
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  if (z.naCadeira) desenharCadeira(ctx, z);
   const hy = -22 + p.hy;
 
   perna(ctx, v, -1, hy, p.pT, true);
@@ -589,6 +652,50 @@ function desenharPersonagem(ctx, z) {
       desenharEstrela(ctx, z.cabeca.x + Math.cos(a) * 13, z.cabeca.y - 18 + Math.sin(a) * 4, 3.2);
     }
   }
+}
+
+// sentado na cadeira de rodas: as pernas ficam sentadas e, andando, os braços giram as rodas
+function poseNaCadeira(p, z) {
+  const andando = z.pose === 'andar' || z.pose === 'correr' || z.pose === 'correrApavorado';
+  const { bF, bT, olhos, boca: bc, cab } = p;
+  sentar(p);
+  p.hy = 7;
+  p.incl = 0; p.deitado = false; p.cab = cab;
+  if (andando) {
+    const s = Math.sin(z.tPose * 9) * 0.35;
+    p.bF = [0.55 + s, 0.9 + s]; p.bT = [0.45 - s, 0.8 - s];
+    p.olhos = z.pose === 'correrApavorado' ? 'susto' : olhos;
+    p.boca = z.pose === 'correrApavorado' ? 'aberta' : bc;
+  } else if (z.pose !== 'parado' && z.pose !== 'sentado') {
+    p.bF = bF; p.bT = bT; p.olhos = olhos; p.boca = bc;
+  }
+}
+
+function desenharCadeira(ctx, z) {
+  const c = (v) => rgb(Cenario.escurecer(v));
+  ctx.save();
+  ctx.lineCap = 'round';
+  // encosto e manopla (pra trás), assento, apoio dos pés
+  ctx.strokeStyle = c('#5c6370'); ctx.lineWidth = 2;
+  linha(ctx, -9, -15, -11, -36); linha(ctx, -11, -36, -16, -36);
+  ctx.strokeStyle = c('#2b2f36'); ctx.lineWidth = 4;
+  linha(ctx, -9, -16, -10.5, -33);
+  linha(ctx, -9, -15, 8, -15);
+  ctx.strokeStyle = c('#5c6370'); ctx.lineWidth = 1.6;
+  linha(ctx, 8, -15, 13, -4); linha(ctx, 11, -4, 17, -4);
+  // roda grande
+  ctx.save();
+  ctx.translate(-3, -12);
+  ctx.strokeStyle = c('#2b2b2b'); ctx.lineWidth = 2.6;
+  elipse(ctx, 0, 0, 11.5, 11.5); ctx.stroke();
+  ctx.strokeStyle = c('#aab0b8'); ctx.lineWidth = 0.8;
+  elipse(ctx, 0, 0, 9.3, 9.3); ctx.stroke();
+  ctx.rotate(z.rodaCadeira);
+  for (let i = 0; i < 4; i++) { ctx.rotate(Math.PI / 4); linha(ctx, -9, 0, 9, 0); }
+  ctx.restore();
+  // rodinha da frente
+  ctx.fillStyle = c('#2b2b2b'); elipse(ctx, 13, -2.5, 2.5, 2.5); ctx.fill();
+  ctx.restore();
 }
 
 function desenharEstrela(ctx, x, y, r) {

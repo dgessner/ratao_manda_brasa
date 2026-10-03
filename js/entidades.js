@@ -138,3 +138,65 @@ class Guincho extends Entidade {
     ctx.restore();
   }
 }
+
+// ------------------------------------------------------------------ ambulância
+// vem da esquerda, de frente pra direita; a porta de trás fica em (x - 64)
+class Ambulancia extends Entidade {
+  constructor() { super({ camada: 2, roda: 0, porta: 0, sirene: true }); this.x = Vista.x0 - 120; this.px = this.x; }
+  get traseira() { return this.x - 64; }
+  atualizar(dt) {
+    super.atualizar(dt);
+    this.roda += (this.x - this.px) / 9;
+    this.px = this.x;
+    if (this.sirene && chance(dt * 0.45)) Particulas.texto(this.x, CHAO - 92, pick(['UÓÓ UÓÓ', 'UÍÍU UÍÍU']), '#ffd8d8', 14, 1.6);
+  }
+  desenhar(ctx) {
+    const c = (v) => rgb(Cenario.escurecer(v));
+    ctx.save();
+    ctx.translate(this.x, CHAO);
+    // baú
+    ctx.fillStyle = c('#f8f9fa'); retArred(ctx, -64, -62, 92, 50, 3); ctx.fill();
+    // cabine
+    ctx.beginPath(); ctx.moveTo(28, -12); ctx.lineTo(28, -52); ctx.lineTo(46, -52); ctx.lineTo(62, -32); ctx.lineTo(64, -12); ctx.fill();
+    ctx.fillStyle = c('#a8d8ef');
+    ctx.beginPath(); ctx.moveTo(32, -34); ctx.lineTo(32, -48); ctx.lineTo(44, -48); ctx.lineTo(55, -34); ctx.fill();
+    // faixa e cruz
+    ctx.fillStyle = c('#e03131'); ctx.fillRect(-64, -30, 128, 5);
+    ctx.fillRect(-47, -54, 6, 18); ctx.fillRect(-53, -48, 18, 6);
+    ctx.fillStyle = c('#c92a2a'); ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('AMBULÂNCIA', 2, -38);
+    ctx.fillStyle = c('#2c2f33'); ctx.fillRect(-66, -14, 132, 4);
+    // giroflex
+    const pisca = Math.sin(this.t * 14) > 0;
+    ctx.fillStyle = this.sirene ? (pisca ? '#ff4040' : c('#7a1010')) : c('#7a1010'); ctx.fillRect(-10, -67, 9, 5);
+    ctx.fillStyle = this.sirene ? (pisca ? c('#0b2a7a') : '#4dabf7') : c('#0b2a7a'); ctx.fillRect(0, -67, 9, 5);
+    // porta de trás: fechada (contorno + janelinha) ou aberta (interior escuro e a folha virada pra fora)
+    if (this.porta < 0.5) {
+      ctx.strokeStyle = c('#ced4da'); ctx.lineWidth = 1; ctx.strokeRect(-62, -58, 20, 44);
+      ctx.fillStyle = c('#a8d8ef'); ctx.fillRect(-59, -55, 14, 9);
+    } else {
+      ctx.fillStyle = c('#343a40'); ctx.fillRect(-62, -58, 20, 44);
+      ctx.fillStyle = c('#e9ecef'); ctx.fillRect(-71, -60, 6, 47);
+    }
+    for (const rx of [-40, 42]) {
+      ctx.save(); ctx.translate(rx, -9);
+      ctx.fillStyle = '#1c1c1c'; elipse(ctx, 0, 0, 9, 9); ctx.fill();
+      ctx.fillStyle = c('#9a9a92'); elipse(ctx, 0, 0, 4, 4); ctx.fill();
+      ctx.rotate(this.roda); ctx.strokeStyle = '#444'; ctx.lineWidth = 1.2; linha(ctx, -3.5, 0, 3.5, 0);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  desenharLuz(ctx) {
+    if (!this.sirene) return;
+    const pisca = Math.sin(this.t * 14) > 0;
+    const x = this.x + (pisca ? -6 : 5), y = CHAO - 65;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, y, 1, x, y, 60);
+    const cor = pisca ? '255,60,60' : '70,140,255';
+    g.addColorStop(0, `rgba(${cor},0.45)`); g.addColorStop(1, `rgba(${cor},0)`);
+    ctx.fillStyle = g; ctx.fillRect(x - 60, y - 60, 120, 120);
+    ctx.restore();
+  }
+}

@@ -10,7 +10,8 @@ const NOITE = ['noite', 'crepusculo'];
 const SEMPRE = ['dia', 'crepusculo', 'noite'];
 
 function registrarHistoria(def) {
-  HISTORIAS.push(Object.assign({ quando: SEMPRE, peso: 1, pode: () => true }, def));
+  // saude: em que estado o Ratão precisa estar (ok | hospital | cadeira) para a história ser sorteada
+  HISTORIAS.push(Object.assign({ quando: SEMPRE, peso: 1, pode: () => true, saude: 'ok' }, def));
 }
 
 // Comandos de roteiro para um personagem
@@ -127,6 +128,7 @@ async function ociosoDe(a, min, max) {
 }
 
 async function ocioso() {
+  if (Ratao.saude === 'hospital') { await ociosoDe(B, 280, 530); await ociosoDe(B, 280, 530); return; }
   await h.juntos(ociosoDe(R, 250, 530), ociosoDe(B, 280, 530));
 }
 
